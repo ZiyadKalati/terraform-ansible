@@ -40,6 +40,11 @@ resource "aws_route_table" "main" {
   }
 }
 
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.main.id
+}
+
 resource "aws_security_group" "allow_http" {
   name        = "allow_http"
   description = "Allow HTTP and HTTPS inbound traffic"
