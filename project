@@ -47,3 +47,4 @@ while getopts ":hcd" option; do
          exit;;
    esac
 done
+

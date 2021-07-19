@@ -133,14 +133,3 @@ resource "aws_instance" "main" {
   }
   
 }
-
-#resource "aws_ebs_volume" "main" {
-#  availability_zone = "ca-central-1a"
-#  size              = 8
-#}
-
-#resource "aws_volume_attachment" "main" {
-#  device_name = "/dev/sdh"
-#  volume_id   = aws_ebs_volume.main.id
-#  instance_id = aws_instance.main.id
-#}
