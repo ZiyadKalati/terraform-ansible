@@ -1,0 +1,49 @@
+#!/bin/sh
+
+Help()
+{
+   # Display Help
+   echo
+   echo "Syntax: project [-c|d|h]"
+   echo "options:"
+   echo "c     Create key pair and deploy all aws resources"
+   echo "d     Delete key pair and destroy all aws resources"
+   echo "h     Print this Help."
+   echo
+}
+
+key_name=aa-terraform-secret
+
+# Get the options
+while getopts ":hcd" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+      c) # Deploy all resources
+         # the awk command is to squeeze extra white space to only a single space
+         # this removes guess work for -f option of the cut command
+         secret=$(aws ec2 create-key-pair --key-name $key_name | grep "KeyMaterial" | awk '{$1=$1;print}' | cut -d' ' -f 2- | sed 's/\"//g')
+
+         # ${x%?} is syntax to remove the last character in a string
+         echo -e "${secret%?}" > secret.pem
+         chmod 400 secret.pem
+
+	 terraform init
+         terraform apply;;
+      d) # Destroy all resources
+         terraform destroy
+
+         aws ec2 delete-key-pair --key-name $key_name
+
+	 chmod 700 secret.pem
+	 rm secret.pem;;
+     \:) # An argument was not passed in
+         echo "Argument was not passed in for -$OPTARG"
+         exit;;
+     \?) # Invalid option
+         echo "Error: -$OPTARG is an invalid option"
+	 Help
+         exit;;
+   esac
+done

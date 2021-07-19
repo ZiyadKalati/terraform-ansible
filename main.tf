@@ -17,9 +17,10 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "main" {
-  vpc_id                    = aws_vpc.main.id
-  cidr_block                = "10.0.0.0/24"
-  map_public_ip_on_launch   = true
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.0.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "ca-central-1a"
 }
 
 resource "aws_internet_gateway" "gw" {
@@ -55,7 +56,7 @@ resource "aws_security_group" "allow_http" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = [aws_vpc.main.cidr_block]
+    cidr_blocks = ["0.0.0.0/0"]
     #ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
   }
 
@@ -64,8 +65,15 @@ resource "aws_security_group" "allow_http" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [aws_vpc.main.cidr_block]
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
+  ingress {
+    description = "Allow SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -94,20 +102,45 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "main" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  availability_zone = "ca-central-1a"
-  subnet_id     = aws_subnet.main.id
+  ami                       = data.aws_ami.ubuntu.id
+  instance_type             = "t3.micro"
+  availability_zone         = "ca-central-1a"
+  subnet_id                 = aws_subnet.main.id
+  vpc_security_group_ids    = [aws_security_group.allow_http.id]
+  key_name                  = "aa-terraform-secret"
+
+  tags = {
+    Name = "aa-terraform-1"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["echo 'Hello World'"]
+
+    connection {
+      type        = "ssh"
+      host        = aws_instance.main.public_ip
+      user        = "ubuntu"
+      private_key = file("secret.pem")
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key 'secret.pem' ./ansible/docker.yml"
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key 'secret.pem' ./ansible/nginx.yml"
+  }
+  
 }
 
-resource "aws_ebs_volume" "main" {
-  availability_zone = "ca-central-1a"
-  size              = 8
+#resource "aws_ebs_volume" "main" {
+#  availability_zone = "ca-central-1a"
+#  size              = 8
+#}
 
-}
-
-resource "aws_volume_attachment" "main" {
-  device_name = "/dev/sdh"
-  volume_id   = aws_ebs_volume.main.id
-  instance_id = aws_instance.main.id
-}
+#resource "aws_volume_attachment" "main" {
+#  device_name = "/dev/sdh"
+#  volume_id   = aws_ebs_volume.main.id
+#  instance_id = aws_instance.main.id
+#}

@@ -1,0 +1,19 @@
+---
+- hosts: all
+  roles:
+    - sysctl
+  become: yes
+  tasks:
+  - name: Initial system update
+    apt:
+      upgrade: dist
+      update_cache: yes
+  - name: Install docker
+    apt:
+      name: docker.io
+      state: latest
+  - name: Start and enable docker server
+    service:
+      name: docker
+      enabled: yes
+      state: started
