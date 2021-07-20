@@ -1,17 +1,17 @@
 ---
 - name: Checkout gist file from github
   git:
-    repo: https://gist.github.com/pensierinmusica/6206493
-    dest: /home/ubuntu/gist
+    repo: "{{ repo_url }}"
+    dest: "{{ home_dir }}{{ gist_dir }}"
 - name: Move gist file to sysctl.d/ directory
   command:
-    cmd: mv network-tuning.conf /etc/sysctl.d/
-    chdir: /home/ubuntu/gist
+    cmd: mv "{{ conf_file }}" "{{ sysctl_dir }}"
+    chdir: "{{ home_dir }}{{ gist_dir }}"
 - name: Remove gist directory
   command:
-    cmd: rm -rf gist/
-    chdir: /home/ubuntu/
+    cmd: rm -rf "{{ gist_dir }}"
+    chdir: "{{ home_dir }}"
 - name: Configure new kernel parameters
   command:
-    cmd: sysctl -e -p /etc/sysctl.d/network-tuning.conf
+    cmd: sysctl -e -p "{{ sysctl_dir }}{{ conf_file }}"
 

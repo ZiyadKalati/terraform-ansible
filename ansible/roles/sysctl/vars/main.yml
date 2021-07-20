@@ -1,0 +1,6 @@
+---
+repo_url: https://gist.github.com/pensierinmusica/6206493
+home_dir: /home/ubuntu/
+gist_dir: gist/
+sysctl_dir: /etc/sysctl.d/
+conf_file: network-tuning.conf
