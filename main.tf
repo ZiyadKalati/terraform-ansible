@@ -113,6 +113,7 @@ resource "aws_instance" "main" {
     Name = "${var.ec2_name_prefix}-1"
   }
 
+  # A hack to wait for ec2 to be reachable
   provisioner "remote-exec" {
     inline = ["echo 'Hello World'"]
 
@@ -124,8 +125,8 @@ resource "aws_instance" "main" {
     }
   }
 
+  # Now that ec2 is reachable, run ansible playbooks
   provisioner "local-exec" {
     command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key ${var.private_key_file} ansible/docker.yml ansible/nginx.yml"
   }
-  
 }
