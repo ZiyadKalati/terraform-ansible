@@ -9,18 +9,18 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "ca-central-1"
+  region = var.region
 }
 
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr_block
 }
 
 resource "aws_subnet" "main" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.0.0/24"
+  cidr_block              = var.subnet_cidr_block
   map_public_ip_on_launch = true
-  availability_zone       = "ca-central-1a"
+  availability_zone       = var.availability_zone
 }
 
 resource "aws_internet_gateway" "gw" {
@@ -104,13 +104,13 @@ data "aws_ami" "ubuntu" {
 resource "aws_instance" "main" {
   ami                       = data.aws_ami.ubuntu.id
   instance_type             = "t3.micro"
-  availability_zone         = "ca-central-1a"
+  availability_zone         = var.availability_zone
   subnet_id                 = aws_subnet.main.id
   vpc_security_group_ids    = [aws_security_group.allow_http.id]
-  key_name                  = "aa-terraform-secret"
+  key_name                  = "${var.ec2_name_prefix}-secret"
 
   tags = {
-    Name = "aa-terraform-1"
+    Name = "${var.ec2_name_prefix}-1"
   }
 
   provisioner "remote-exec" {
@@ -120,16 +120,12 @@ resource "aws_instance" "main" {
       type        = "ssh"
       host        = aws_instance.main.public_ip
       user        = "ubuntu"
-      private_key = file("secret.pem")
+      private_key = file(var.private_key_file)
     }
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key 'secret.pem' ./ansible/docker.yml"
-  }
-
-  provisioner "local-exec" {
-    command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key 'secret.pem' ./ansible/nginx.yml"
+    command = "ansible-playbook -i '${aws_instance.main.public_ip},' -u ubuntu --private-key ${var.private_key_file} ansible/docker.yml ansible/nginx.yml"
   }
   
 }
